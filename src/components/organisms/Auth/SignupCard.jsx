@@ -105,14 +105,6 @@ export const SignupCard = ({
                         disabled={isPending}
                     />
 
-                    {/* Terms */}
-                    <div className="flex items-center gap-2 text-sm mt-2">
-                        <input type="checkbox" required className="cursor-pointer" />
-                        <p>
-                            I agree to the <span className="text-purple-600 cursor-pointer">Terms & Conditions</span>
-                        </p>
-                    </div>
-
                     <Button
                         disabled={isPending || isSuccess}
                         size="lg"

@@ -27,18 +27,6 @@ export const signInRequest = async ({ email, password }) => {
     }
 };
 
-export const forgotPasswordRequest = async ({ email }) => {
-    try {
-        const response = await axios.post('/users/forgot-password', {
-            email
-        });
-        return response.data;
-    } catch (error) {
-        console.error(error);
-        throw error.response?.data || error;
-    }
-};
-
 export const resetPasswordRequest = async ({ token, password }) => {
     try {
         const response = await axios.post('/users/reset-password', {

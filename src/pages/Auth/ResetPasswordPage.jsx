@@ -147,9 +147,9 @@ export const ResetPasswordPage = () => {
         </div>
 
         <p className="mt-4 text-sm text-muted-foreground">
-          Need a new link?{' '}
-          <Link className="text-sky-600 hover:underline" to="/auth/forgot-password">
-            Request reset email
+          Remember your password?{' '}
+          <Link className="cursor-pointer text-sky-600 hover:underline" to="/auth/signin">
+            Sign in
           </Link>
         </p>
       </CardContent>

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
 import { ProtectedRoute } from '@/components/molecules/ProtectedRoute/ProtectedRoute';
 import { SuperAdminRoute } from '@/components/molecules/SuperAdminRoute/SuperAdminRoute';
@@ -24,10 +24,6 @@ const Auth = lazyNamed(() => import('@/pages/Auth/Auth'), 'Auth');
 const GoogleAuthSuccess = lazyNamed(
   () => import('@/pages/Auth/GoogleAuthSuccess'),
   'GoogleAuthSuccess'
-);
-const ForgotPasswordPage = lazyNamed(
-  () => import('@/pages/Auth/ForgotPasswordPage'),
-  'ForgotPasswordPage'
 );
 const ResetPasswordPage = lazyNamed(
   () => import('@/pages/Auth/ResetPasswordPage'),
@@ -86,7 +82,6 @@ export const AppRoutes = () => {
               <Route path="/workspaces/create" element={<ProtectedRoute><CreateWorkspacePage /></ProtectedRoute>} />
               <Route path="/auth/signup" element={<Auth><SignupContainer /></Auth>} />
               <Route path="/auth/signin" element={<Auth><SigninContainer /></Auth>} />
-              <Route path="/auth/forgot-password" element={<Auth><ForgotPasswordPage /></Auth>} />
               <Route path="/auth/reset-password" element={<Auth><ResetPasswordPage /></Auth>} />
               <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />

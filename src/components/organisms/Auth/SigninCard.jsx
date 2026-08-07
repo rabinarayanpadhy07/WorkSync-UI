@@ -101,21 +101,6 @@ export const SigninCard = ({
                         />
                     </div>
 
-                    <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                        <label className="flex items-center gap-2 leading-none">
-                            <input type="checkbox" className="cursor-pointer" />
-                            <span>Remember me</span>
-                        </label>
-
-                        <button
-                            type="button"
-                            className="cursor-pointer self-end text-right text-[#4B2AAD] hover:underline"
-                            onClick={() => navigate('/auth/forgot-password')}
-                        >
-                            Forgot password?
-                        </button>
-                    </div>
-
                     <Button
                         className="mt-2 flex h-11 w-full cursor-pointer items-center justify-center gap-2 bg-[#4B2AAD] text-sm hover:bg-[#3b2190] sm:text-base disabled:cursor-not-allowed"
                         disabled={isPending || isSuccess}

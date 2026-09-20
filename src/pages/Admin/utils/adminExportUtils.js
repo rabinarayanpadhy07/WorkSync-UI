@@ -7,7 +7,7 @@ const truncate = (value = '', maxLength = 160) =>
 
 const downloadFileName = (label, extension) => {
   const safeLabel = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  return `slackapp-${safeLabel}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  return `worksync-${safeLabel}-${new Date().toISOString().slice(0, 10)}.${extension}`;
 };
 
 const exportRows = {
@@ -126,7 +126,7 @@ export const exportAdminRowsToPdf = async ({ label, rows }) => {
   });
 
   document.setFontSize(16);
-  document.text(`SlackApp ${label}`, 14, 18);
+  document.text(`WorkSync ${label}`, 14, 18);
   document.setFontSize(10);
   document.text(`Generated ${new Date().toLocaleString()}`, 14, 24);
 

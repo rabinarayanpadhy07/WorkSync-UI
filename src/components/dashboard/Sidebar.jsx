@@ -40,7 +40,7 @@ export const Sidebar = ({ workspaces }) => {
         ) : (
           <div className="flex-1">
             <h2 className="text-white font-semibold flex items-center">
-              SlackApp Dashboard
+              WorkSync Dashboard
             </h2>
           </div>
         )}

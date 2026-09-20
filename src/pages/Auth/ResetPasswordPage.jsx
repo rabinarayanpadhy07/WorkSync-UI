@@ -79,7 +79,7 @@ export const ResetPasswordPage = () => {
         </div>
         <CardTitle className="mt-3">Reset password</CardTitle>
         <CardDescription>
-          Choose a new password for your SlackApp account.
+          Choose a new password for your WorkSync account.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -25,7 +25,7 @@ export const Payments = () => {
   async function handleFormSubmit(e) {
     e.preventDefault();
     try {
-      const response = await createOrderMutation(amount * 100);
+      const response = await createOrderMutation('premium');
       setOrderResponse(response);
     } catch (error) {
       toast.error("Unable to start payment", {
@@ -125,13 +125,15 @@ export const Payments = () => {
         </div>
       </div>
 
-      {/* Razorpay */}
+      {/* Razorpay — amount/currency come from the server-created order, never
+          from client state, so the checkout widget always reflects what will
+          actually be charged. */}
       {orderResponse?.id ? (
         <RenderRazorpayPopup
-          amount={amount * 100}
+          amount={orderResponse.amount}
           orderId={orderResponse.id}
           keyId={import.meta.env.VITE_RAZORPAY_KEY_ID}
-          currency="INR"
+          currency={orderResponse.currency}
         />
       ) : null}
     </div>

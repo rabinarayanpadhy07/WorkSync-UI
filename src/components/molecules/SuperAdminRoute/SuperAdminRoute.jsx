@@ -23,7 +23,6 @@ export const SuperAdminRoute = ({ children }) => {
             isSuperAdmin: true
         };
 
-        localStorage.setItem('user', JSON.stringify(nextUser));
         setAuth((previous) => ({
             ...previous,
             user: nextUser

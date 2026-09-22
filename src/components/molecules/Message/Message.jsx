@@ -32,43 +32,47 @@ export const Message = ({
     image,
     reactions = [],
     onAddReaction,
+    onToggleStar,
+    onEdit,
+    onDelete,
+    onTogglePin,
     onRequestAiReply,
     showAiReplyAction = false,
     isReply = false,
     isEdited = false,
+    isPending = false,
     deletedAt = null,
     isPinned = false,
     stars = []
 }) => {
     const { openThread } = useThread();
-    const { onlineUsers, socket, currentChannel } = useSocket();
+    const { onlineUsers } = useSocket();
     const { auth } = useAuth();
     const { currentWorkspace } = useCurrentWorkspace();
-    
+
     const [isEditing, setIsEditing] = useState(false);
     const [isFetchingAiReply, setIsFetchingAiReply] = useState(false);
 
     const isOnline = onlineUsers?.includes(authorId);
     const isAuthor = auth?.user?._id === authorId;
-    
+
     const isWorkspaceAdmin = currentWorkspace?.members?.find(
         (m) => (m.memberId && m.memberId._id ? m.memberId._id === auth?.user?._id : m.memberId === auth?.user?._id) && m.role === 'admin'
     );
     const isStarred = stars?.includes(auth?.user?._id);
 
-    const handleEditSubmit = ({ body }) => {
-        socket.emit('EDIT_MESSAGE', { messageId, body, memberId: auth?.user?._id, channelId: currentChannel }, (res) => {
-             if(res?.success) setIsEditing(false);
-        });
+    const handleEditSubmit = async ({ body }) => {
+        const success = await onEdit?.(messageId, body);
+        if (success) setIsEditing(false);
     };
     const handleDelete = () => {
-        socket.emit('DELETE_MESSAGE', { messageId, memberId: auth?.user?._id, channelId: currentChannel });
+        onDelete?.(messageId);
     };
     const handleTogglePin = () => {
-        socket.emit('TOGGLE_PIN_MESSAGE', { messageId, memberId: auth?.user?._id, channelId: currentChannel });
+        onTogglePin?.(messageId);
     };
     const handleToggleStar = () => {
-        socket.emit('TOGGLE_STAR_MESSAGE', { messageId, memberId: auth?.user?._id, channelId: currentChannel });
+        onToggleStar?.(messageId);
     };
     const handleAiReply = async () => {
         if (!onRequestAiReply) return;
@@ -107,7 +111,7 @@ export const Message = ({
     const displayTime = formatTime(createdAt);
 
     return (
-        <div className={`flex w-full p-2 px-4 group relative mb-4 ${isAuthor ? 'justify-end' : 'justify-start'}`}>
+        <div className={`flex w-full p-2 px-4 group relative mb-4 ${isAuthor ? 'justify-end' : 'justify-start'} ${isPending ? 'opacity-60' : ''}`}>
             
             {/* Hover Action Bar */}
             {!deletedAt && !isEditing && (

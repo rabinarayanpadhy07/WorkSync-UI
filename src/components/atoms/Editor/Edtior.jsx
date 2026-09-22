@@ -171,7 +171,7 @@ export const Editor = ({
 
         quill.on('text-change', () => {
             if (onTextChangeRef.current) {
-                onTextChangeRef.current();
+                onTextChangeRef.current(JSON.stringify(quillRef.current?.getContents()));
             }
         });
 

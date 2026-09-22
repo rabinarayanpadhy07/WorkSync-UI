@@ -26,7 +26,6 @@ export const useCaptureOrder = () => {
                     ...updatedUser
                 };
 
-                localStorage.setItem('user', JSON.stringify(nextUser));
                 setAuth({
                     token: auth?.token,
                     user: nextUser,

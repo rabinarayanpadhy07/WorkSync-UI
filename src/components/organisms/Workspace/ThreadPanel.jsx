@@ -1,18 +1,17 @@
 import { XIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useThread } from '@/context/ThreadContext';
 import { Button } from '@/components/ui/button';
 import { useGetThreadMessages } from '@/hooks/apis/threads/useGetThreadMessages';
+import { useMarkThreadAsRead } from '@/hooks/apis/threads/useMarkThreadAsRead';
 import { useCurrentWorkspace } from '@/hooks/context/useCurrentWorkspace';
+import { useChannelMessageActions } from '@/hooks/apis/channels/useChannelMessageActions';
 import { Message } from '@/components/molecules/Message/Message';
 import { ChatInput } from '@/components/molecules/ChatInput/ChatInput';
 import { useAuth } from '@/hooks/context/useAuth';
 import { useSocket } from '@/hooks/context/useSocket';
-import { getPreginedUrl, uploadImageToAWSpresignedUrl } from '@/apis/s3';
 import { buildEditorDraftFromText } from '@/utils/aiDraft';
 
 export const ThreadPanel = () => {
@@ -21,61 +20,45 @@ export const ThreadPanel = () => {
     const { workspaceId } = useParams();
     const { auth } = useAuth();
     const { socket, currentChannel } = useSocket();
-    const queryClient = useQueryClient();
     const [replySeedValue, setReplySeedValue] = useState('');
     const hasAiAccess = auth?.user?.plan === 'Paid';
 
-    const { messages, isFetching, isError } = useGetThreadMessages({
-        workspaceId: currentWorkspace?._id || workspaceId,
+    const effectiveWorkspaceId = currentWorkspace?._id || workspaceId;
+
+    const { rootMessage, messages, isFetching, isError } = useGetThreadMessages({
+        workspaceId: effectiveWorkspaceId,
         threadId: activeThreadMessageId
     });
 
+    const { markThreadAsRead } = useMarkThreadAsRead(effectiveWorkspaceId);
+    const {
+        sendMessage,
+        toggleReaction: toggleReactionInChannel,
+        toggleStar: toggleStarInChannel,
+        editMessage: editMessageInChannel,
+        deleteMessage: deleteMessageInChannel,
+        togglePin: togglePinInChannel
+    } = useChannelMessageActions(currentChannel);
+
+    // Every message rendered in this panel (root + replies) lives in the
+    // thread cache, not the channel cache — bind threadId so mutations land
+    // in the right place (see useChannelMessageActions' threadId param).
+    const toggleReaction = (messageId, emoji) => toggleReactionInChannel(messageId, emoji, activeThreadMessageId);
+    const toggleStar = (messageId) => toggleStarInChannel(messageId, activeThreadMessageId);
+    const editMessage = (messageId, body) => editMessageInChannel(messageId, body, activeThreadMessageId);
+    const deleteMessage = (messageId) => deleteMessageInChannel(messageId, activeThreadMessageId);
+    const togglePin = (messageId) => togglePinInChannel(messageId, activeThreadMessageId);
+
+    // Mark the thread read as soon as it is opened, and again as new replies
+    // arrive while it stays open.
     useEffect(() => {
-        if (!socket || !activeThreadMessageId) return;
-
-        const handleNewMessage = (data) => {
-            if (data.parentMessage === activeThreadMessageId) {
-                queryClient.setQueryData(['getThreadMessages', activeThreadMessageId], (old) => {
-                    if (!old) return [data];
-                    return [...old, data];
-                });
-            }
-        };
-
-        socket.on('NewMessageReceived', handleNewMessage);
-        return () => {
-            socket.off('NewMessageReceived', handleNewMessage);
-        };
-    }, [socket, activeThreadMessageId, queryClient]);
-
-    const handleSubmit = async (payload) => {
-        const { body, image } = payload;
-        let fileUrl = null;
-        if (image) {
-            const preSignedUrl = await queryClient.fetchQuery({
-                queryKey: ['getPresignedUrl'],
-                queryFn: () => getPreginedUrl({ token: auth?.token }),
-            });
-
-            await uploadImageToAWSpresignedUrl({
-                url: preSignedUrl,
-                file: image
-            });
-            fileUrl = preSignedUrl.split('?')[0];
+        if (activeThreadMessageId) {
+            markThreadAsRead(activeThreadMessageId);
         }
+    }, [activeThreadMessageId, messages.length, markThreadAsRead]);
 
-        socket?.emit('NewMessage', {
-            channelId: currentChannel,
-            body,
-            image: fileUrl,
-            senderId: auth?.user?._id,
-            workspaceId: currentWorkspace?._id,
-            parentMessage: activeThreadMessageId
-        }, (data) => {
-            console.log('Thread reply sent', data);
-            // Invalidate the thread messages query to refresh the list instantly
-            queryClient.invalidateQueries(['getThreadMessages', activeThreadMessageId]);
-        });
+    const handleSubmit = async ({ body, image }) => {
+        await sendMessage({ body, image, parentMessage: activeThreadMessageId });
     };
 
     const handleRequestAiReply = (messageId) => new Promise((resolve) => {
@@ -84,17 +67,17 @@ export const ThreadPanel = () => {
             return;
         }
 
-        const messageIndex = messages?.findIndex((message) => message._id === messageId) ?? -1;
-        const targetMessage = messageIndex >= 0 ? messages[messageIndex] : null;
+        const allMessages = [rootMessage, ...messages].filter(Boolean);
+        const messageIndex = allMessages.findIndex((message) => message._id === messageId);
+        const targetMessage = messageIndex >= 0 ? allMessages[messageIndex] : null;
         const recentMessages = messageIndex >= 0
-            ? messages.slice(Math.max(0, messageIndex - 4), messageIndex).map((message) => ({
+            ? allMessages.slice(Math.max(0, messageIndex - 4), messageIndex).map((message) => ({
                 body: message.body,
                 senderName: message.senderId?.username
             }))
             : [];
 
         socket.emit('GENERATE_AI_REPLY', {
-            token: auth.token,
             targetMessage: {
                 body: targetMessage?.body,
                 senderName: targetMessage?.senderId?.username
@@ -139,22 +122,56 @@ export const ThreadPanel = () => {
                     </div>
                 )}
 
+                {!isFetching && !isError && rootMessage && (
+                    <>
+                        <Message
+                            messageId={rootMessage._id}
+                            author={rootMessage.senderId}
+                            authorId={rootMessage.senderId?._id}
+                            body={rootMessage.body}
+                            authorName={rootMessage.senderId?.username}
+                            createdAt={rootMessage.createdAt}
+                            image={rootMessage.image}
+                            reactions={rootMessage.reactions || []}
+                            onAddReaction={toggleReaction}
+                            onToggleStar={toggleStar}
+                            onEdit={editMessage}
+                            onDelete={deleteMessage}
+                            onTogglePin={togglePin}
+                            isReply={true}
+                            isEdited={rootMessage.isEdited}
+                            deletedAt={rootMessage.deletedAt}
+                            isPinned={rootMessage.isPinned}
+                            stars={rootMessage.stars}
+                        />
+                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-1 pt-2 pb-1">
+                            {messages.length} {messages.length === 1 ? 'reply' : 'replies'}
+                        </div>
+                    </>
+                )}
+
                 {!isFetching && !isError && messages?.map((message) => (
-                    <Message 
-                        key={message._id} 
+                    <Message
+                        key={message._id}
                         messageId={message._id}
                         author={message.senderId}
                         authorId={message.senderId?._id}
-                        body={message.body} 
-                        authorName={message.senderId?.username} 
-                        createdAt={message.createdAt} 
+                        body={message.body}
+                        authorName={message.senderId?.username}
+                        createdAt={message.createdAt}
                         image={message.image}
                         reactions={message.reactions || []}
+                        isPending={message.isPending}
+                        onAddReaction={toggleReaction}
+                        onToggleStar={toggleStar}
+                        onEdit={editMessage}
+                        onDelete={deleteMessage}
+                        onTogglePin={togglePin}
                         onRequestAiReply={handleRequestAiReply}
                         onUseAiReply={handleUseAiReply}
                         showAiReplyAction={hasAiAccess}
                         // Disable replying to a reply to keep threads 1-level deep
-                        isReply={true} 
+                        isReply={true}
                         isEdited={message.isEdited}
                         deletedAt={message.deletedAt}
                         isPinned={message.isPinned}

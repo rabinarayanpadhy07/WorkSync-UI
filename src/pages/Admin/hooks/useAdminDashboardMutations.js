@@ -32,7 +32,6 @@ export const useAdminDashboardMutations = () => {
                     isActive: updatedUser.isActive ?? auth.user.isActive
                 };
 
-                globalThis.localStorage.setItem('user', JSON.stringify(nextUser));
                 setAuth((previous) => ({ ...previous, user: nextUser }));
             }
 

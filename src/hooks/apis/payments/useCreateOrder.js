@@ -7,7 +7,7 @@ export const useCreateOrder = () => {
     const { auth } = useAuth();
 
     const { mutateAsync: createOrderMutation, error, isSuccess, isPending } = useMutation({
-        mutationFn: (amount) => createOrderRequest({ token: auth?.token, amount }),
+        mutationFn: (plan) => createOrderRequest({ token: auth?.token, plan }),
         onSuccess: (data) => {
             console.log('Order created successfully', data);
         },

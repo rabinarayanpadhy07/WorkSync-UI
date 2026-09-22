@@ -1,21 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LucideLoader2 } from 'lucide-react';
 
+import { googleAuthExchangeRequest } from '@/apis/auth';
 import { useAuth } from '@/hooks/context/useAuth';
 
 export const GoogleAuthSuccess = () => {
     const [searchParams] = useSearchParams();
     const { setAuth } = useAuth();
     const navigate = useNavigate();
-    
+    const hasRun = useRef(false);
 
     useEffect(() => {
-        const params = searchParams; // Changed from new URLSearchParams(location.search)
-        const token = params.get('token');
-        const userStr = params.get('user');
-        const error = params.get('error');
+        if (hasRun.current) return;
+        hasRun.current = true;
+
+        const code = searchParams.get('code');
+        const error = searchParams.get('error');
 
         if (error) {
             toast.error('Failed to sign in with Google', {
@@ -25,18 +27,19 @@ export const GoogleAuthSuccess = () => {
             return;
         }
 
-        if (token && userStr) {
-            try {
-                const user = JSON.parse(decodeURIComponent(userStr));
-                
-                // Store in localStorage
-                localStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('token', token);
+        if (!code) {
+            console.error('No authentication code found in URL');
+            navigate('/auth/signin', { replace: true });
+            return;
+        }
 
-                // Update auth state
+        (async () => {
+            try {
+                const response = await googleAuthExchangeRequest({ code });
+
                 setAuth({
-                    token,
-                    user,
+                    token: response.data.token,
+                    user: response.data,
                     isLoading: false
                 });
 
@@ -46,18 +49,15 @@ export const GoogleAuthSuccess = () => {
 
                 setTimeout(() => {
                     navigate('/home', { replace: true });
-                }, 2000);
-            } catch (error) {
-                console.error('Error parsing user data', error);
+                }, 1000);
+            } catch (fetchError) {
+                console.error('Error exchanging Google auth code', fetchError);
                 toast.error('Failed to sign in', {
                     description: 'Something went wrong with Google authentication.'
                 });
                 navigate('/auth/signin', { replace: true });
             }
-        } else {
-            console.error('No token or user data found in URL');
-            navigate('/auth/signin', { replace: true });
-        }
+        })();
     }, [searchParams, navigate, setAuth]);
 
     return (

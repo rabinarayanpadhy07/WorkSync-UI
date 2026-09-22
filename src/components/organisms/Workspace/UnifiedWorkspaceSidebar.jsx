@@ -11,6 +11,7 @@ import { WorkspaceSwitcher } from '@/components/organisms/Workspace/WorkspaceSwi
 import { useGetWorkspaceById } from '@/hooks/apis/workspaces/useGetWorkspaceById';
 import { useCreateChannelModal } from '@/hooks/context/useCreateChannelModal';
 import { useGetUnreadChannels } from '@/hooks/apis/read-receipts/useGetUnreadChannels';
+import { useDrafts } from '@/hooks/apis/drafts/useDrafts';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/context/useAuth';
@@ -25,6 +26,7 @@ export const UnifiedWorkspaceSidebar = () => {
 
     const { workspace, isFetching, isSuccess, error } = useGetWorkspaceById(workspaceId);
     const { unreadMap } = useGetUnreadChannels(workspaceId);
+    const { drafts } = useDrafts(workspaceId);
 
     useEffect(() => {
         if (!isFetching && !isSuccess && error) {
@@ -88,11 +90,12 @@ export const UnifiedWorkspaceSidebar = () => {
                         to={`/workspaces/${workspaceId}/threads`}
                         variant='default'
                     />
-                    <SideBarItem 
+                    <SideBarItem
                         label="Drafts & Sends"
                         icon={SendHorizonalIcon}
                         to={`/workspaces/${workspaceId}/drafts`}
                         variant='default'
+                        unreadCount={drafts.length}
                     />
                 </div>
 

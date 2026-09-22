@@ -59,7 +59,6 @@ export const UserSettingsModal = () => {
                 ...response.data
             };
 
-            localStorage.setItem('user', JSON.stringify(nextUser));
             setAuth({
                 token: auth.token,
                 user: nextUser,

@@ -27,6 +27,16 @@ export const signInRequest = async ({ email, password }) => {
     }
 };
 
+export const googleAuthExchangeRequest = async ({ code }) => {
+    try {
+        const response = await axios.post('/users/auth/google/exchange', { code });
+        return response.data;
+    } catch (error) {
+        console.error(error);
+        throw error.response?.data || error;
+    }
+};
+
 export const resetPasswordRequest = async ({ token, password }) => {
     try {
         const response = await axios.post('/users/reset-password', {

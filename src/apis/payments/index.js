@@ -1,9 +1,9 @@
 import axios from '../../config/axiosConfig';
 
-export const createOrderRequest = async ({ token, amount }) => {
+export const createOrderRequest = async ({ token, plan }) => {
     try {
         const response = await axios.post('/payments/order', {
-            amount
+            plan
         }, {
             headers: {
                 'x-access-token': token
